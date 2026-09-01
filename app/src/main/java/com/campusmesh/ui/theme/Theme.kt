@@ -62,13 +62,13 @@ private val Pixel8BitColors = darkColorScheme(
     onSecondary = MonoBlack,
     secondaryContainer = PixelSurfaceVariant,
     onSecondaryContainer = PixelCyan,
-    background = PixelDarkBg,
+    background = PixelDarkBg,            // Vibrant Arcade Midnight Violet Background!
     onBackground = PixelTextWhite,
-    surface = PixelSurface,
+    surface = PixelSurface,               // Vibrant Arcade Indigo Surface!
     onSurface = PixelTextWhite,
-    surfaceVariant = PixelSurfaceVariant,
+    surfaceVariant = PixelSurfaceVariant, // Arcade Card Surface!
     onSurfaceVariant = PixelCyan,
-    outline = PixelCyan,
+    outline = PixelBorder,
     outlineVariant = PixelMagenta,
     error = PixelOrange,
     onError = MonoBlack,
@@ -85,10 +85,15 @@ fun CampusMeshTheme(
         AppTheme.DEFAULT -> if (darkTheme) DarkColors else LightColors
     }
 
+    val typography = when (appTheme) {
+        AppTheme.PIXEL_8BIT -> PixelTypography
+        AppTheme.DEFAULT -> CampusMeshTypography
+    }
+
     CompositionLocalProvider(LocalAppTheme provides appTheme) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = CampusMeshTypography,
+            typography = typography,
             content = content,
         )
     }

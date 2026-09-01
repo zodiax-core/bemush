@@ -29,15 +29,15 @@ val CampusDanger = Color(0xFFD32F2F)
 val CampusOk = Color(0xFF388E3C)
 
 // 8-Bit Retro Cartoon Arcade Palette (PIXEL_8BIT Theme)
-val PixelYellow = Color(0xFFFFDE00)      // Main Accent / Buttons
-val PixelCyan = Color(0xFF00F0FF)        // Secondary Accent / Incoming Messages
-val PixelMagenta = Color(0xFFFF007F)     // Highlights & Badges
-val PixelGreen = Color(0xFF39FF14)       // Connected / Success
-val PixelOrange = Color(0xFFFF6C00)      // Warnings / Pending
-val PixelDarkBg = Color(0xFF0D0D1A)      // Retro Arcade Dark Background
-val PixelSurface = Color(0xFF161626)     // Retro Block Surface
-val PixelSurfaceVariant = Color(0xFF222238)// Retro Card Variant
-val PixelBorder = Color(0xFF00F0FF)       // Thick Retro Outlines
+val PixelYellow = Color(0xFFFFDE00)        // Main Accent / Buttons
+val PixelCyan = Color(0xFF00F0FF)          // Secondary Accent / Incoming Messages
+val PixelMagenta = Color(0xFFFF007F)       // Highlights & Badges
+val PixelGreen = Color(0xFF39FF14)         // Connected / Success
+val PixelOrange = Color(0xFFFF6C00)        // Warnings / Pending
+val PixelDarkBg = Color(0xFF120826)        // Vibrant Arcade Midnight Violet Background (NOT standard dark!)
+val PixelSurface = Color(0xFF1D0E3D)       // Vibrant Arcade Indigo Surface Block
+val PixelSurfaceVariant = Color(0xFF2B1457)// Arcade Card Variant Surface
+val PixelBorder = Color(0xFFFF007F)         // High-contrast Arcade Outlines
 val PixelTextWhite = Color(0xFFFFFFFF)
 val PixelTextYellow = Color(0xFFFFDE00)
 val PixelTextCyan = Color(0xFF00F0FF)

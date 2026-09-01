@@ -32,8 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -44,7 +44,7 @@ fun ThemeLoadingOverlay(
     onLoadingComplete: () -> Unit,
 ) {
     var progress by remember { mutableFloatStateOf(0.1f) }
-    var statusText by remember { mutableStateOf("INITIALIZING THEME ENGINE...") }
+    var statusText by remember { mutableStateOf("INITIALIZING ENGINE...") }
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
@@ -53,23 +53,23 @@ fun ThemeLoadingOverlay(
     )
 
     LaunchedEffect(targetTheme) {
-        statusText = if (targetTheme == AppTheme.PIXEL_8BIT) "INITIALIZING 8-BIT PIXEL ENGINE..." else "RESTORING DEFAULT DARK ENGINE..."
+        statusText = if (targetTheme == AppTheme.PIXEL_8BIT) "LOADING 8-BIT ENGINE..." else "RESTORING DARK ENGINE..."
         delay(300)
         progress = 0.45f
-        statusText = if (targetTheme == AppTheme.PIXEL_8BIT) "LOADING RETRO COLOR PALETTES..." else "UNLOADING RETRO ASSETS..."
+        statusText = if (targetTheme == AppTheme.PIXEL_8BIT) "LOADING RETRO PALETTE..." else "UNLOADING PALETTE..."
         delay(400)
         progress = 0.85f
-        statusText = "COMPILING SHADERS & STYLES..."
+        statusText = "COMPILING SHADERS..."
         delay(350)
         progress = 1.0f
-        statusText = "THEME SWITCH COMPLETE!"
+        statusText = "SWITCH COMPLETE!"
         delay(250)
         onLoadingComplete()
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF0D0D1A),
+        color = Color(0xFF120826),
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -77,7 +77,7 @@ fun ThemeLoadingOverlay(
         ) {
             Column(
                 modifier = Modifier
-                    .padding(32.dp)
+                    .padding(24.dp)
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
@@ -85,39 +85,40 @@ fun ThemeLoadingOverlay(
                 // Pixel Icon Badge
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .size(76.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(if (targetTheme == AppTheme.PIXEL_8BIT) PixelYellow else Color(0xFF1E3A5F))
-                        .border(3.dp, if (targetTheme == AppTheme.PIXEL_8BIT) PixelCyan else Color.White, RoundedCornerShape(8.dp)),
+                        .border(3.dp, if (targetTheme == AppTheme.PIXEL_8BIT) PixelCyan else Color.White, RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Icons.Default.Star,
                         contentDescription = "Loading",
                         tint = if (targetTheme == AppTheme.PIXEL_8BIT) Color.Black else Color.White,
-                        modifier = Modifier.size(44.dp),
+                        modifier = Modifier.size(40.dp),
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
                 Text(
-                    text = if (targetTheme == AppTheme.PIXEL_8BIT) "🕹️ 8-BIT RETRO ENGINE" else "⚡ DEFAULT DARK THEME",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Black,
+                    text = if (targetTheme == AppTheme.PIXEL_8BIT) "🕹️ 8-BIT RETRO" else "⚡ DEFAULT DARK",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Normal,
                     color = PixelYellow,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 1.sp,
+                    fontFamily = PressStart2PFontFamily,
+                    textAlign = TextAlign.Center,
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
                     text = statusText,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 9.sp,
                     color = PixelCyan,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = PressStart2PFontFamily,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 15.sp,
                 )
 
                 Spacer(modifier = Modifier.height(36.dp))
@@ -128,7 +129,7 @@ fun ThemeLoadingOverlay(
                         .fillMaxWidth()
                         .height(24.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF1A1A2E))
+                        .background(Color(0xFF1D0E3D))
                         .border(2.dp, PixelMagenta, RoundedCornerShape(4.dp))
                         .padding(3.dp),
                 ) {
@@ -140,14 +141,13 @@ fun ThemeLoadingOverlay(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
                     text = "${(animatedProgress * 100).toInt()}%",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 12.sp,
                     color = PixelMagenta,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = PressStart2PFontFamily,
                 )
             }
         }
