@@ -1,17 +1,17 @@
 <resources>
     <!-- Base activity theme. Drives the OS-level pre-draw splash screen (Android 12+). -->
     <style name="Theme.CampusMesh" parent="Theme.SplashScreen">
-        <!-- Android 12+ Splash Screen API using clean modern mesh vector logo -->
-        <item name="windowSplashScreenBackground">#0F172A</item>
+        <!-- Android 12+ Splash Screen API using retro 8-bit C logo -->
+        <item name="windowSplashScreenBackground">#0055FF</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_app_logo</item>
-        <item name="windowSplashScreenIconBackgroundColor">#0F172A</item>
+        <item name="windowSplashScreenIconBackgroundColor">#0055FF</item>
         <item name="postSplashScreenTheme">@style/Theme.CampusMesh.Main</item>
     </style>
 
     <!-- Main app theme applied after the splash. Dark window background prevents white flash. -->
     <style name="Theme.CampusMesh.Main" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">#0F172A</item>
-        <item name="android:statusBarColor">#0F172A</item>
-        <item name="android:navigationBarColor">#0F172A</item>
+        <item name="android:windowBackground">#121212</item>
+        <item name="android:statusBarColor">#0055FF</item>
+        <item name="android:navigationBarColor">#121212</item>
     </style>
 </resources>

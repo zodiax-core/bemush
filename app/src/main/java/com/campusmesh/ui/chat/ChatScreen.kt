@@ -22,7 +22,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,6 +36,7 @@ import com.campusmesh.ui.theme.PixelCyan
 import com.campusmesh.ui.theme.PixelGreen
 import com.campusmesh.ui.theme.PixelMagenta
 import com.campusmesh.ui.theme.PixelOrange
+import com.campusmesh.ui.theme.PixelTextCyan
 import com.campusmesh.ui.theme.PixelYellow
 import java.io.File
 import java.text.SimpleDateFormat
@@ -99,6 +99,7 @@ fun ChatScreen(
     }
 
     Scaffold(
+        containerColor = if (isPixel) Color.White else MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -117,7 +118,7 @@ fun ChatScreen(
                                 .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primaryContainer)
                                 .border(
                                     width = if (isPixel) 2.dp else 0.dp,
-                                    color = if (isPixel) PixelCyan else Color.Transparent,
+                                    color = if (isPixel) Color.Black else Color.Transparent,
                                     shape = CircleShape,
                                 ),
                             contentAlignment = Alignment.Center,
@@ -134,7 +135,6 @@ fun ChatScreen(
                                     text = state.peerLabel.take(2).uppercase(),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
-                                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                                     color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
@@ -144,26 +144,32 @@ fun ChatScreen(
                                 text = state.peerLabel,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                                color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurface,
                             )
                             Text(
                                 text = connectionLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = connectionColor,
-                                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                             )
                         }
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurface,
+                        )
                     }
                 },
             )
         },
         bottomBar = {
-            Surface(tonalElevation = 3.dp) {
+            Surface(
+                tonalElevation = 3.dp,
+                color = if (isPixel) Color(0xFFF4F6FC) else MaterialTheme.colorScheme.surface,
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -175,12 +181,7 @@ fun ChatScreen(
                     OutlinedTextField(
                         value = textInput,
                         onValueChange = { textInput = it },
-                        placeholder = {
-                            Text(
-                                "Type a message…",
-                                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
-                            )
-                        },
+                        placeholder = { Text("Type a message…") },
                         modifier = Modifier.weight(1f),
                         maxLines = 4,
                         shape = RoundedCornerShape(12.dp),
@@ -195,7 +196,10 @@ fun ChatScreen(
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape)
-                            .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primary),
+                            .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primary)
+                            .then(
+                                if (isPixel) Modifier.border(2.dp, Color.Black, CircleShape) else Modifier
+                            ),
                         enabled = textInput.isNotBlank(),
                     ) {
                         Icon(
@@ -220,7 +224,7 @@ fun ChatScreen(
                         "No messages yet",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                        color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -229,9 +233,8 @@ fun ChatScreen(
                         else
                             "Not connected to this peer. Messages you send will be queued and delivered when in range.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (isPixel) Color.DarkGray else MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
-                        fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                     )
                 }
             }
@@ -259,7 +262,7 @@ private fun MessageBubble(message: MessageEntity, isPixel: Boolean) {
     val alignment = if (isOutgoing) Arrangement.End else Arrangement.Start
 
     val bubbleColor = if (isPixel) {
-        if (isOutgoing) PixelYellow else PixelCyan
+        if (isOutgoing) PixelYellow else Color(0xFFE0F7FA)
     } else {
         if (isOutgoing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
     }
@@ -271,7 +274,7 @@ private fun MessageBubble(message: MessageEntity, isPixel: Boolean) {
     }
 
     val shape = if (isPixel) {
-        RoundedCornerShape(6.dp)
+        RoundedCornerShape(8.dp)
     } else if (isOutgoing) {
         RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp)
     } else {
@@ -285,8 +288,8 @@ private fun MessageBubble(message: MessageEntity, isPixel: Boolean) {
     val (statusText, statusColor) = when {
         !isOutgoing -> "" to textColor
         message.status == "PENDING" -> " 🕐" to (if (isPixel) Color(0xFF666666) else textColor.copy(alpha = 0.7f))
-        message.status == "SENT" -> " ✓" to (if (isPixel) Color(0xFF333333) else textColor.copy(alpha = 0.7f))
-        message.status == "DELIVERED" -> " ✓✓" to (if (isPixel) Color(0xFF333333) else textColor.copy(alpha = 0.7f))
+        message.status == "SENT" -> " ✓" to (if (isPixel) Color.Black else textColor.copy(alpha = 0.7f))
+        message.status == "DELIVERED" -> " ✓✓" to (if (isPixel) Color.Black else textColor.copy(alpha = 0.7f))
         message.status == "SEEN" -> " ✓✓" to (if (isPixel) PixelMagenta else Color(0xFF64B5F6))
         else -> "" to textColor
     }
@@ -301,7 +304,7 @@ private fun MessageBubble(message: MessageEntity, isPixel: Boolean) {
             modifier = Modifier
                 .widthIn(min = 70.dp, max = 290.dp)
                 .then(
-                    if (isPixel) Modifier.border(2.dp, if (isOutgoing) PixelMagenta else PixelYellow, shape) else Modifier
+                    if (isPixel) Modifier.border(2.dp, Color.Black, shape) else Modifier
                 ),
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -309,8 +312,7 @@ private fun MessageBubble(message: MessageEntity, isPixel: Boolean) {
                     text = message.content,
                     color = textColor,
                     style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (isPixel) FontWeight.Bold else FontWeight.Normal,
-                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                    fontWeight = FontWeight.Normal,
                 )
                 Row(
                     modifier = Modifier.align(Alignment.End),
@@ -320,8 +322,7 @@ private fun MessageBubble(message: MessageEntity, isPixel: Boolean) {
                     Text(
                         text = timeStr,
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isPixel) Color.DarkGray else textColor.copy(alpha = 0.7f),
-                        fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                        color = if (isPixel) Color(0xFF444444) else textColor.copy(alpha = 0.7f),
                     )
                     if (isOutgoing) {
                         Text(
@@ -329,7 +330,6 @@ private fun MessageBubble(message: MessageEntity, isPixel: Boolean) {
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = statusColor,
-                            fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                         )
                     }
                 }

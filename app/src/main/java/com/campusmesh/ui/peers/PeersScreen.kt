@@ -79,6 +79,7 @@ fun PeersScreen(
     val isPixel = (appTheme == AppTheme.PIXEL_8BIT)
 
     Scaffold(
+        containerColor = if (isPixel) Color.White else MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {

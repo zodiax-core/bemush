@@ -28,16 +28,16 @@ val CampusWarning = Color(0xFFE65100)
 val CampusDanger = Color(0xFFD32F2F)
 val CampusOk = Color(0xFF388E3C)
 
-// 8-Bit Retro Cartoon Arcade Palette (PIXEL_8BIT Theme)
-val PixelYellow = Color(0xFFFFDE00)        // Main Accent / Buttons
-val PixelCyan = Color(0xFF00F0FF)          // Secondary Accent / Incoming Messages
-val PixelMagenta = Color(0xFFFF007F)       // Highlights & Badges
-val PixelGreen = Color(0xFF39FF14)         // Connected / Success
-val PixelOrange = Color(0xFFFF6C00)        // Warnings / Pending
-val PixelDarkBg = Color(0xFF120826)        // Vibrant Arcade Midnight Violet Background (NOT standard dark!)
-val PixelSurface = Color(0xFF1D0E3D)       // Vibrant Arcade Indigo Surface Block
-val PixelSurfaceVariant = Color(0xFF2B1457)// Arcade Card Variant Surface
-val PixelBorder = Color(0xFFFF007F)         // High-contrast Arcade Outlines
-val PixelTextWhite = Color(0xFFFFFFFF)
-val PixelTextYellow = Color(0xFFFFDE00)
-val PixelTextCyan = Color(0xFF00F0FF)
+// 8-Bit Retro Cartoon Arcade Palette (PIXEL_8BIT Theme — Bright Cartoon White Style)
+val PixelYellow = Color(0xFFFFDE00)        // Vibrant Neon Yellow
+val PixelCyan = Color(0xFF00F0FF)          // Retro Neon Cyan
+val PixelMagenta = Color(0xFFFF007F)       // Arcade Pink
+val PixelGreen = Color(0xFF00E676)         // Arcade Green
+val PixelOrange = Color(0xFFFF6D00)        // Arcade Orange
+val PixelDarkBg = Color(0xFFFFFFFF)        // WHITE BACKGROUND FOR ARCADE THEME!
+val PixelSurface = Color(0xFFF4F6FC)       // Crisp Cartoon Surface Block
+val PixelSurfaceVariant = Color(0xFFE5E9F5)// Cartoon Card Variant
+val PixelBorder = Color(0xFF000000)         // Bold 8-Bit Black Outlines
+val PixelTextWhite = Color(0xFF000000)      // High-Contrast Black Text
+val PixelTextYellow = Color(0xFFFFC400)
+val PixelTextCyan = Color(0xFF0055FF)

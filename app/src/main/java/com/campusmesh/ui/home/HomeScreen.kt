@@ -24,7 +24,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +34,7 @@ import com.campusmesh.ui.theme.AppTheme
 import com.campusmesh.ui.theme.LocalAppTheme
 import com.campusmesh.ui.theme.PixelCyan
 import com.campusmesh.ui.theme.PixelMagenta
+import com.campusmesh.ui.theme.PixelTextCyan
 import com.campusmesh.ui.theme.PixelYellow
 import java.io.File
 import java.text.SimpleDateFormat
@@ -72,22 +72,21 @@ fun HomeScreen(
     val isPixel = (appTheme == AppTheme.PIXEL_8BIT)
 
     Scaffold(
+        containerColor = if (isPixel) Color.White else MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
                     Column {
                         Text(
-                            text = if (isPixel) "🕹️ CampusMesh 8-BIT" else "CampusMesh",
+                            text = if (isPixel) "🕹️ CampusMesh" else "CampusMesh",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
-                            color = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onSurface,
+                            color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = if (isPixel) "OFFLINE MESH NETWORK ACTIVE" else "Offline Mesh Network",
+                            text = if (isPixel) "OFFLINE MESH NETWORK" else "Offline Mesh Network",
                             style = MaterialTheme.typography.labelSmall,
-                            fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
-                            color = if (isPixel) PixelCyan else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (isPixel) PixelTextCyan else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 },
@@ -96,14 +95,14 @@ fun HomeScreen(
                         Icon(
                             Icons.Default.Person,
                             contentDescription = "Profile",
-                            tint = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     IconButton(onClick = onDebugClick) {
                         Icon(
                             Icons.Default.Build,
                             contentDescription = "Debug",
-                            tint = if (isPixel) PixelCyan else MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = if (isPixel) PixelTextCyan else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 },
@@ -116,20 +115,19 @@ fun HomeScreen(
                     Icon(
                         Icons.Default.Search,
                         contentDescription = null,
-                        tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = Color.Black,
                     )
                 },
                 text = {
                     Text(
                         text = if (isPixel) "FIND PEERS 🕹️" else "Find Peers",
                         fontWeight = FontWeight.Bold,
-                        fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
-                        color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = Color.Black,
                     )
                 },
                 containerColor = if (isPixel) PixelYellow else MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.then(
-                    if (isPixel) Modifier.border(2.dp, PixelMagenta, RoundedCornerShape(16.dp)) else Modifier
+                    if (isPixel) Modifier.border(2.5.dp, Color.Black, RoundedCornerShape(16.dp)) else Modifier
                 ),
             )
         },
@@ -150,7 +148,7 @@ fun HomeScreen(
                     )
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 80.dp),
-                        color = if (isPixel) PixelMagenta.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        color = if (isPixel) Color.Black.copy(alpha = 0.2f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     )
                 }
             }
@@ -199,7 +197,7 @@ private fun ConversationRow(
                 .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primaryContainer)
                 .border(
                     width = if (isPixel) 2.dp else 0.dp,
-                    color = if (isPixel) PixelCyan else Color.Transparent,
+                    color = if (isPixel) Color.Black else Color.Transparent,
                     shape = CircleShape,
                 ),
             contentAlignment = Alignment.Center,
@@ -215,7 +213,6 @@ private fun ConversationRow(
                 Text(
                     text = conversation.peerLabel.take(2).uppercase(),
                     style = MaterialTheme.typography.titleMedium,
-                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                     color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
                     fontWeight = FontWeight.Bold,
                 )
@@ -233,17 +230,15 @@ private fun ConversationRow(
                     text = conversation.peerLabel,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
-                    color = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onSurface,
+                    color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = timeFormatted,
                     style = MaterialTheme.typography.labelSmall,
-                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                     color = if (conversation.unreadCount > 0) {
                         if (isPixel) PixelMagenta else MaterialTheme.colorScheme.primary
                     } else {
-                        if (isPixel) PixelCyan else MaterialTheme.colorScheme.onSurfaceVariant
+                        if (isPixel) PixelTextCyan else MaterialTheme.colorScheme.onSurfaceVariant
                     },
                     fontWeight = if (conversation.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
                 )
@@ -256,11 +251,10 @@ private fun ConversationRow(
                 Text(
                     text = "$statusPrefix${conversation.lastMessageContent}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isPixel) Color.DarkGray else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
-                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                 )
 
                 if (conversation.unreadCount > 0) {
@@ -269,15 +263,15 @@ private fun ConversationRow(
                         modifier = Modifier
                             .clip(RoundedCornerShape(10.dp))
                             .background(if (isPixel) PixelMagenta else MaterialTheme.colorScheme.primary)
+                            .border(if (isPixel) 1.5.dp else 0.dp, Color.Black, RoundedCornerShape(10.dp))
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             text = "${conversation.unreadCount}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onPrimary,
+                            color = Color.White,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                         )
                     }
                 }
@@ -308,7 +302,7 @@ private fun EmptyState(
                     .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primaryContainer)
                     .border(
                         width = if (isPixel) 3.dp else 0.dp,
-                        color = if (isPixel) PixelMagenta else Color.Transparent,
+                        color = if (isPixel) Color.Black else Color.Transparent,
                         shape = RoundedCornerShape(12.dp),
                     ),
                 contentAlignment = Alignment.Center,
@@ -324,11 +318,10 @@ private fun EmptyState(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = if (isPixel) "🕹️ NO CONVERSATIONS YET" else "No Conversations Yet",
+                text = if (isPixel) "🕹️ NO MESSAGES YET" else "No Conversations Yet",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
-                color = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onSurface,
+                color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurface,
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -336,8 +329,7 @@ private fun EmptyState(
             Text(
                 text = "Tap 'Find Peers' to scan for nearby phones over Bluetooth LE mesh.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                color = if (isPixel) Color.DarkGray else MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -346,13 +338,15 @@ private fun EmptyState(
                 onClick = onFindPeers,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isPixel) PixelYellow else MaterialTheme.colorScheme.primary,
-                    contentColor = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                    contentColor = Color.Black,
+                ),
+                modifier = Modifier.then(
+                    if (isPixel) Modifier.border(2.5.dp, Color.Black, RoundedCornerShape(12.dp)) else Modifier
                 ),
             ) {
                 Text(
                     text = if (isPixel) "PRESS TO FIND PEERS 🕹️" else "Find Nearby Peers",
                     fontWeight = FontWeight.Bold,
-                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                 )
             }
         }

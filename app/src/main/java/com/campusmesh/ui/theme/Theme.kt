@@ -53,25 +53,25 @@ private val DarkColors = darkColorScheme(
     onError = MonoBlack,
 )
 
-private val Pixel8BitColors = darkColorScheme(
+private val Pixel8BitColors = lightColorScheme(
     primary = PixelYellow,
     onPrimary = MonoBlack,
     primaryContainer = PixelMagenta,
-    onPrimaryContainer = PixelTextWhite,
+    onPrimaryContainer = MonoWhite,
     secondary = PixelCyan,
     onSecondary = MonoBlack,
     secondaryContainer = PixelSurfaceVariant,
-    onSecondaryContainer = PixelCyan,
-    background = PixelDarkBg,            // Vibrant Arcade Midnight Violet Background!
-    onBackground = PixelTextWhite,
-    surface = PixelSurface,               // Vibrant Arcade Indigo Surface!
-    onSurface = PixelTextWhite,
-    surfaceVariant = PixelSurfaceVariant, // Arcade Card Surface!
-    onSurfaceVariant = PixelCyan,
+    onSecondaryContainer = MonoBlack,
+    background = Color.White,            // PURE WHITE BACKGROUND FOR ARCADE THEME!
+    onBackground = MonoBlack,            // Crisp Black 8-Bit Text!
+    surface = PixelSurface,               // Light Cartoon Indigo/White Surface!
+    onSurface = MonoBlack,
+    surfaceVariant = PixelSurfaceVariant, // Light Card Surface!
+    onSurfaceVariant = MonoBlack,
     outline = PixelBorder,
     outlineVariant = PixelMagenta,
     error = PixelOrange,
-    onError = MonoBlack,
+    onError = MonoWhite,
 )
 
 @Composable
