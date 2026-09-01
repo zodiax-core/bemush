@@ -1,0 +1,36 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# Local machine / secrets
+local.properties
+*.keystore
+*.jks
+keystore.properties
+google-services.json
+
+# Android Studio / IDE
+.idea/
+*.iml
+.DS_Store
+captures/
+.cxx/
+*.apk
+*.ap_
+*.aab
+output.json
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Archives & Binaries
+*.zip
+*.tar.gz
+
+# Kotlin
+.kotlin/

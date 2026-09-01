@@ -1,0 +1,101 @@
+package com.campusmesh.ui.chat
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.campusmesh.data.MessageRepository
+import com.campusmesh.data.PeerRepository
+import com.campusmesh.db.MessageEntity
+import com.campusmesh.db.PeerEntity
+import com.campusmesh.transport.DirectTransportController
+import com.campusmesh.transport.DirectTransportSnapshot
+import com.campusmesh.transport.TransportConnectionState
+import com.campusmesh.ui.navigation.Routes
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class ChatViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val messageRepository: MessageRepository,
+    private val peerRepository: PeerRepository,
+    private val directTransportController: DirectTransportController,
+) : ViewModel() {
+
+    val peerNodeId: String = Routes.decodeArg(savedStateHandle["peerNodeId"] ?: "")
+    val initialPeerLabel: String = Routes.decodeArg(savedStateHandle["peerLabel"] ?: "Peer")
+
+    val uiState: StateFlow<ChatUiState> = combine(
+        messageRepository.getMessagesForConversation(peerNodeId),
+        peerRepository.allPeers,
+        directTransportController.snapshot,
+    ) { messages, peers, transport ->
+        val peer = peers.find { it.nodeId == peerNodeId }
+        val effectiveLabel = peer?.displayName ?: initialPeerLabel.takeIf { it.isNotBlank() } ?: peerNodeId.take(8).uppercase()
+
+        ChatUiState(
+            peerNodeId = peerNodeId,
+            peerLabel = effectiveLabel,
+            messages = messages,
+            peer = peer,
+            transport = transport,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = ChatUiState(
+            peerNodeId = peerNodeId,
+            peerLabel = initialPeerLabel,
+            messages = emptyList(),
+            transport = directTransportController.snapshot.value,
+        ),
+    )
+
+    init {
+        directTransportController.activeChatPeerId = peerNodeId
+        directTransportController.markConversationAsRead(peerNodeId)
+
+        // Auto-connect on chat screen open
+        viewModelScope.launch {
+            val peer = peerRepository.getPeer(peerNodeId)
+            if (peer != null) {
+                val currentTransport = directTransportController.snapshot.value
+                if (currentTransport.connectionState != TransportConnectionState.Connected ||
+                    currentTransport.peerAddress != peer.deviceAddress
+                ) {
+                    val label = peer.displayName ?: initialPeerLabel
+                    directTransportController.connectToPeer(
+                        deviceAddress = peer.deviceAddress,
+                        peerNodeId = peerNodeId,
+                        peerLabel = label
+                    )
+                }
+            }
+        }
+    }
+
+    fun sendMessage(content: String) {
+        if (content.isBlank()) return
+        directTransportController.sendMessage(content, targetPeerNodeId = peerNodeId)
+    }
+
+    override fun onCleared() {
+        if (directTransportController.activeChatPeerId == peerNodeId) {
+            directTransportController.activeChatPeerId = null
+        }
+        super.onCleared()
+    }
+}
+
+data class ChatUiState(
+    val peerNodeId: String,
+    val peerLabel: String,
+    val messages: List<MessageEntity>,
+    val peer: PeerEntity? = null,
+    val transport: DirectTransportSnapshot,
+)
