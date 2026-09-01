@@ -3,6 +3,7 @@ package com.campusmesh.ui.chat
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,6 +31,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.campusmesh.db.MessageEntity
 import com.campusmesh.transport.TransportConnectionState
+import com.campusmesh.ui.theme.AppTheme
+import com.campusmesh.ui.theme.LocalAppTheme
+import com.campusmesh.ui.theme.PixelCyan
+import com.campusmesh.ui.theme.PixelGreen
+import com.campusmesh.ui.theme.PixelMagenta
+import com.campusmesh.ui.theme.PixelOrange
+import com.campusmesh.ui.theme.PixelYellow
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -61,6 +70,8 @@ fun ChatScreen(
 ) {
     var textInput by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val appTheme = LocalAppTheme.current
+    val isPixel = (appTheme == AppTheme.PIXEL_8BIT)
 
     LaunchedEffect(state.messages.size) {
         if (state.messages.isNotEmpty()) {
@@ -76,15 +87,15 @@ fun ChatScreen(
     }
 
     val connectionColor = when (state.transport.connectionState) {
-        TransportConnectionState.Connected -> MaterialTheme.colorScheme.secondary
-        TransportConnectionState.Connecting -> MaterialTheme.colorScheme.tertiary
+        TransportConnectionState.Connected -> if (isPixel) PixelGreen else MaterialTheme.colorScheme.secondary
+        TransportConnectionState.Connecting -> if (isPixel) PixelOrange else MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val connectionLabel = when (state.transport.connectionState) {
         TransportConnectionState.Connected -> "● Connected"
         TransportConnectionState.Connecting -> "○ Connecting…"
         TransportConnectionState.Failed -> "✕ Failed"
-        TransportConnectionState.Disconnected -> "○ Offline — messages queued"
+        TransportConnectionState.Disconnected -> "○ Offline — queued"
     }
 
     Scaffold(
@@ -103,7 +114,12 @@ fun ChatScreen(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primaryContainer)
+                                .border(
+                                    width = if (isPixel) 2.dp else 0.dp,
+                                    color = if (isPixel) PixelCyan else Color.Transparent,
+                                    shape = CircleShape,
+                                ),
                             contentAlignment = Alignment.Center,
                         ) {
                             if (avatarBitmap != null) {
@@ -118,16 +134,23 @@ fun ChatScreen(
                                     text = state.peerLabel.take(2).uppercase(),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                                    color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
                                 )
                             }
                         }
                         Column {
-                            Text(state.peerLabel, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = state.peerLabel,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                            )
                             Text(
                                 text = connectionLabel,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = connectionColor,
+                                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                             )
                         }
                     }
@@ -142,17 +165,25 @@ fun ChatScreen(
         bottomBar = {
             Surface(tonalElevation = 3.dp) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp).navigationBarsPadding(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                        .navigationBarsPadding(),
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     OutlinedTextField(
                         value = textInput,
                         onValueChange = { textInput = it },
-                        placeholder = { Text("Message…") },
+                        placeholder = {
+                            Text(
+                                "Type a message…",
+                                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                            )
+                        },
                         modifier = Modifier.weight(1f),
                         maxLines = 4,
-                        shape = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(12.dp),
                     )
                     IconButton(
                         onClick = {
@@ -162,14 +193,15 @@ fun ChatScreen(
                             }
                         },
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(52.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
+                            .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primary),
+                        enabled = textInput.isNotBlank(),
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Send",
-                            tint = MaterialTheme.colorScheme.onPrimary,
+                            tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimary,
                         )
                     }
                 }
@@ -178,32 +210,43 @@ fun ChatScreen(
     ) { innerPadding ->
         if (state.messages.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(innerPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-                    Text("No messages yet", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "No messages yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                    )
                     Spacer(Modifier.height(8.dp))
                     Text(
                         text = if (state.transport.connectionState == TransportConnectionState.Connected)
-                            "You are connected. Type a message to start chatting."
+                            "Connected! Type a message to start chatting."
                         else
-                            "Not connected to this peer. Messages you send will be queued and delivered when they are nearby.",
+                            "Not connected to this peer. Messages you send will be queued and delivered when in range.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
+                        fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                     )
                 }
             }
         } else {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize().padding(innerPadding).padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
                 contentPadding = PaddingValues(vertical = 12.dp),
             ) {
                 items(state.messages, key = { it.messageId }) { msg ->
-                    MessageBubble(message = msg)
+                    MessageBubble(message = msg, isPixel = isPixel)
                 }
             }
         }
@@ -211,24 +254,29 @@ fun ChatScreen(
 }
 
 @Composable
-private fun MessageBubble(message: MessageEntity) {
+private fun MessageBubble(message: MessageEntity, isPixel: Boolean) {
     val isOutgoing = message.senderId == "local"
     val alignment = if (isOutgoing) Arrangement.End else Arrangement.Start
 
-    val bubbleColor = if (isOutgoing)
-        MaterialTheme.colorScheme.primary
-    else
-        MaterialTheme.colorScheme.surfaceVariant
+    val bubbleColor = if (isPixel) {
+        if (isOutgoing) PixelYellow else PixelCyan
+    } else {
+        if (isOutgoing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+    }
 
-    val textColor = if (isOutgoing)
-        MaterialTheme.colorScheme.onPrimary
-    else
-        MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = if (isPixel) {
+        Color.Black
+    } else {
+        if (isOutgoing) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    }
 
-    val shape = if (isOutgoing)
+    val shape = if (isPixel) {
+        RoundedCornerShape(6.dp)
+    } else if (isOutgoing) {
         RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp)
-    else
+    } else {
         RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
+    }
 
     val timeStr = remember(message.timestamp) {
         SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp))
@@ -236,10 +284,10 @@ private fun MessageBubble(message: MessageEntity) {
 
     val (statusText, statusColor) = when {
         !isOutgoing -> "" to textColor
-        message.status == "PENDING" -> " 🕐" to textColor.copy(alpha = 0.7f)
-        message.status == "SENT" -> " ✓" to textColor.copy(alpha = 0.7f)
-        message.status == "DELIVERED" -> " ✓✓" to textColor.copy(alpha = 0.7f)
-        message.status == "SEEN" -> " ✓✓" to Color(0xFF64B5F6) // Bright Blue for Seen!
+        message.status == "PENDING" -> " 🕐" to (if (isPixel) Color(0xFF666666) else textColor.copy(alpha = 0.7f))
+        message.status == "SENT" -> " ✓" to (if (isPixel) Color(0xFF333333) else textColor.copy(alpha = 0.7f))
+        message.status == "DELIVERED" -> " ✓✓" to (if (isPixel) Color(0xFF333333) else textColor.copy(alpha = 0.7f))
+        message.status == "SEEN" -> " ✓✓" to (if (isPixel) PixelMagenta else Color(0xFF64B5F6))
         else -> "" to textColor
     }
 
@@ -250,10 +298,20 @@ private fun MessageBubble(message: MessageEntity) {
         Surface(
             color = bubbleColor,
             shape = shape,
-            modifier = Modifier.widthIn(min = 60.dp, max = 280.dp),
+            modifier = Modifier
+                .widthIn(min = 70.dp, max = 290.dp)
+                .then(
+                    if (isPixel) Modifier.border(2.dp, if (isOutgoing) PixelMagenta else PixelYellow, shape) else Modifier
+                ),
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
-                Text(message.content, color = textColor, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = message.content,
+                    color = textColor,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isPixel) FontWeight.Bold else FontWeight.Normal,
+                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                )
                 Row(
                     modifier = Modifier.align(Alignment.End),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
@@ -262,7 +320,8 @@ private fun MessageBubble(message: MessageEntity) {
                     Text(
                         text = timeStr,
                         style = MaterialTheme.typography.labelSmall,
-                        color = textColor.copy(alpha = 0.7f),
+                        color = if (isPixel) Color.DarkGray else textColor.copy(alpha = 0.7f),
+                        fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                     )
                     if (isOutgoing) {
                         Text(
@@ -270,6 +329,7 @@ private fun MessageBubble(message: MessageEntity) {
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = statusColor,
+                            fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                         )
                     }
                 }

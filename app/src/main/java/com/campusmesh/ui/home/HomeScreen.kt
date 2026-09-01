@@ -3,11 +3,13 @@ package com.campusmesh.ui.home
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Person
@@ -19,14 +21,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.campusmesh.ui.theme.AppTheme
+import com.campusmesh.ui.theme.LocalAppTheme
+import com.campusmesh.ui.theme.PixelCyan
+import com.campusmesh.ui.theme.PixelMagenta
+import com.campusmesh.ui.theme.PixelYellow
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -59,29 +68,43 @@ fun HomeScreen(
     onDebugClick: () -> Unit,
     onProfileClick: () -> Unit,
 ) {
+    val appTheme = LocalAppTheme.current
+    val isPixel = (appTheme == AppTheme.PIXEL_8BIT)
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
                         Text(
-                            text = "CampusMesh",
+                            text = if (isPixel) "🕹️ CampusMesh 8-BIT" else "CampusMesh",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
+                            fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                            color = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = "Offline Mesh Network",
+                            text = if (isPixel) "OFFLINE MESH NETWORK ACTIVE" else "Offline Mesh Network",
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                            color = if (isPixel) PixelCyan else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 },
                 actions = {
                     IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = "Profile",
+                            tint = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     IconButton(onClick = onDebugClick) {
-                        Icon(Icons.Default.Build, contentDescription = "Debug", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Build,
+                            contentDescription = "Debug",
+                            tint = if (isPixel) PixelCyan else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 },
             )
@@ -89,13 +112,30 @@ fun HomeScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onNewChatClick,
-                icon = { Icon(Icons.Default.Search, contentDescription = null) },
-                text = { Text("Find Peers") },
+                icon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                },
+                text = {
+                    Text(
+                        text = if (isPixel) "FIND PEERS 🕹️" else "Find Peers",
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                        color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                },
+                containerColor = if (isPixel) PixelYellow else MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.then(
+                    if (isPixel) Modifier.border(2.dp, PixelMagenta, RoundedCornerShape(16.dp)) else Modifier
+                ),
             )
         },
     ) { innerPadding ->
         if (conversations.isEmpty()) {
-            EmptyState(modifier = Modifier.padding(innerPadding), onFindPeers = onNewChatClick)
+            EmptyState(modifier = Modifier.padding(innerPadding), isPixel = isPixel, onFindPeers = onNewChatClick)
         } else {
             LazyColumn(
                 modifier = Modifier
@@ -105,11 +145,12 @@ fun HomeScreen(
                 items(conversations, key = { it.peerId }) { conv ->
                     ConversationRow(
                         conversation = conv,
+                        isPixel = isPixel,
                         onClick = { onConversationClick(conv) },
                     )
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 80.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        color = if (isPixel) PixelMagenta.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     )
                 }
             }
@@ -120,6 +161,7 @@ fun HomeScreen(
 @Composable
 private fun ConversationRow(
     conversation: ConversationSummary,
+    isPixel: Boolean,
     onClick: () -> Unit,
 ) {
     val timeFormatted = remember(conversation.lastMessageTimestamp) {
@@ -154,7 +196,12 @@ private fun ConversationRow(
             modifier = Modifier
                 .size(52.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
+                .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primaryContainer)
+                .border(
+                    width = if (isPixel) 2.dp else 0.dp,
+                    color = if (isPixel) PixelCyan else Color.Transparent,
+                    shape = CircleShape,
+                ),
             contentAlignment = Alignment.Center,
         ) {
             if (avatarBitmap != null) {
@@ -168,7 +215,8 @@ private fun ConversationRow(
                 Text(
                     text = conversation.peerLabel.take(2).uppercase(),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                    color = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -185,11 +233,18 @@ private fun ConversationRow(
                     text = conversation.peerLabel,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
+                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                    color = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
                     text = timeFormatted,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (conversation.unreadCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                    color = if (conversation.unreadCount > 0) {
+                        if (isPixel) PixelMagenta else MaterialTheme.colorScheme.primary
+                    } else {
+                        if (isPixel) PixelCyan else MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                     fontWeight = if (conversation.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
                 )
             }
@@ -201,28 +256,28 @@ private fun ConversationRow(
                 Text(
                     text = "$statusPrefix${conversation.lastMessageContent}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (conversation.unreadCount > 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (conversation.unreadCount > 0) FontWeight.Bold else FontWeight.Normal,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
+                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                 )
 
-                // Unread Count Badge
                 if (conversation.unreadCount > 0) {
+                    Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
-                            .padding(start = 8.dp)
-                            .size(20.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary),
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isPixel) PixelMagenta else MaterialTheme.colorScheme.primary)
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = if (conversation.unreadCount > 99) "99+" else conversation.unreadCount.toString(),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontSize = 11.sp,
+                            text = "${conversation.unreadCount}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onPrimary,
                             fontWeight = FontWeight.Bold,
+                            fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
                         )
                     }
                 }
@@ -232,39 +287,74 @@ private fun ConversationRow(
 }
 
 @Composable
-private fun EmptyState(modifier: Modifier = Modifier, onFindPeers: () -> Unit) {
-    Column(
+private fun EmptyState(
+    modifier: Modifier = Modifier,
+    isPixel: Boolean = false,
+    onFindPeers: () -> Unit,
+) {
+    Box(
         modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            Icons.Default.Person,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "No conversations yet",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Tap 'Find Peers' to discover nearby CampusMesh devices and start chatting offline.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 32.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(onClick = onFindPeers) {
-            Text("Find Peers")
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(32.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (isPixel) PixelYellow else MaterialTheme.colorScheme.primaryContainer)
+                    .border(
+                        width = if (isPixel) 3.dp else 0.dp,
+                        color = if (isPixel) PixelMagenta else Color.Transparent,
+                        shape = RoundedCornerShape(12.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(44.dp),
+                    tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = if (isPixel) "🕹️ NO CONVERSATIONS YET" else "No Conversations Yet",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                color = if (isPixel) PixelYellow else MaterialTheme.colorScheme.onSurface,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Tap 'Find Peers' to scan for nearby phones over Bluetooth LE mesh.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = onFindPeers,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isPixel) PixelYellow else MaterialTheme.colorScheme.primary,
+                    contentColor = if (isPixel) Color.Black else MaterialTheme.colorScheme.onPrimary,
+                ),
+            ) {
+                Text(
+                    text = if (isPixel) "PRESS TO FIND PEERS 🕹️" else "Find Nearby Peers",
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = if (isPixel) FontFamily.Monospace else FontFamily.Default,
+                )
+            }
         }
     }
 }
-
-@Composable
-private fun remember(key: Long, calculation: () -> String) =
-    androidx.compose.runtime.remember(key) { calculation() }

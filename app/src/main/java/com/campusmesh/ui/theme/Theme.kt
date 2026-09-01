@@ -5,7 +5,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+
+val LocalAppTheme = staticCompositionLocalOf { AppTheme.DEFAULT }
 
 private val LightColors = lightColorScheme(
     primary = MonoBlack,
@@ -49,14 +53,43 @@ private val DarkColors = darkColorScheme(
     onError = MonoBlack,
 )
 
+private val Pixel8BitColors = darkColorScheme(
+    primary = PixelYellow,
+    onPrimary = MonoBlack,
+    primaryContainer = PixelMagenta,
+    onPrimaryContainer = PixelTextWhite,
+    secondary = PixelCyan,
+    onSecondary = MonoBlack,
+    secondaryContainer = PixelSurfaceVariant,
+    onSecondaryContainer = PixelCyan,
+    background = PixelDarkBg,
+    onBackground = PixelTextWhite,
+    surface = PixelSurface,
+    onSurface = PixelTextWhite,
+    surfaceVariant = PixelSurfaceVariant,
+    onSurfaceVariant = PixelCyan,
+    outline = PixelCyan,
+    outlineVariant = PixelMagenta,
+    error = PixelOrange,
+    onError = MonoBlack,
+)
+
 @Composable
 fun CampusMeshTheme(
+    appTheme: AppTheme = AppTheme.DEFAULT,
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = CampusMeshTypography,
-        content = content,
-    )
+    val colorScheme = when (appTheme) {
+        AppTheme.PIXEL_8BIT -> Pixel8BitColors
+        AppTheme.DEFAULT -> if (darkTheme) DarkColors else LightColors
+    }
+
+    CompositionLocalProvider(LocalAppTheme provides appTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = CampusMeshTypography,
+            content = content,
+        )
+    }
 }
