@@ -1,9 +1,11 @@
 package com.campusmesh.ui.splash
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
@@ -51,20 +53,18 @@ fun SplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                // Pulsing Logo Icon
+                // Pulsing 8-Bit Pixel C Logo Icon
                 Box(
                     modifier = Modifier
                         .scale(pulseScale)
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .size(110.dp)
+                        .clip(RoundedCornerShape(22.dp)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        Icons.Default.Share,
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.campusmesh.R.drawable.ic_app_logo),
                         contentDescription = "CampusMesh Logo",
-                        modifier = Modifier.size(54.dp),
-                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
 

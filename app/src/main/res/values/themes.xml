@@ -1,19 +1,17 @@
 <resources>
-    <!-- Base activity theme. The window background is dark so there is no white flash
-         before Compose renders. windowSplashScreenBackground drives the OS-level
-         pre-draw splash (Android 12+). -->
+    <!-- Base activity theme. Drives the OS-level pre-draw splash screen (Android 12+). -->
     <style name="Theme.CampusMesh" parent="Theme.SplashScreen">
-        <!-- Android 12+ Splash Screen API -->
-        <item name="windowSplashScreenBackground">#121212</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="windowSplashScreenIconBackgroundColor">#1E3A5F</item>
+        <!-- Android 12+ Splash Screen API using new 8-Bit Pixel C Logo -->
+        <item name="windowSplashScreenBackground">#0055FF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_app_logo</item>
+        <item name="windowSplashScreenIconBackgroundColor">#0055FF</item>
         <item name="postSplashScreenTheme">@style/Theme.CampusMesh.Main</item>
     </style>
 
     <!-- Main app theme applied after the splash. Dark window background prevents white flash. -->
     <style name="Theme.CampusMesh.Main" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#121212</item>
-        <item name="android:statusBarColor">#121212</item>
+        <item name="android:statusBarColor">#0055FF</item>
         <item name="android:navigationBarColor">#121212</item>
     </style>
 </resources>
