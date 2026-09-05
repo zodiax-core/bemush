@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class PeerProfileUiState(
@@ -25,7 +26,7 @@ data class PeerProfileUiState(
 @HiltViewModel
 class PeerProfileViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    peerRepository: PeerRepository,
+    private val peerRepository: PeerRepository,
     directTransportController: DirectTransportController,
 ) : ViewModel() {
 
@@ -37,7 +38,9 @@ class PeerProfileViewModel @Inject constructor(
         directTransportController.snapshot,
     ) { peers, transport ->
         val peer = peers.find { it.nodeId == peerNodeId }
-        val effectiveLabel = peer?.displayName ?: initialLabel
+        val effectiveLabel = peer?.customName?.ifBlank { null }
+            ?: peer?.displayName?.ifBlank { null }
+            ?: initialLabel
         PeerProfileUiState(
             peerNodeId = peerNodeId,
             peerLabel = effectiveLabel,
@@ -53,4 +56,10 @@ class PeerProfileViewModel @Inject constructor(
             transport = directTransportController.snapshot.value,
         ),
     )
+
+    fun updateCustomName(name: String) {
+        viewModelScope.launch {
+            peerRepository.setCustomName(peerNodeId, name)
+        }
+    }
 }

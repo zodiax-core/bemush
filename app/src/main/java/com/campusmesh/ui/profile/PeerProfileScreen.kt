@@ -4,20 +4,23 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -37,6 +40,7 @@ fun PeerProfileRoute(
     PeerProfileScreen(
         state = state,
         onBackClick = onBackClick,
+        onSetCustomName = viewModel::updateCustomName,
     )
 }
 
@@ -45,6 +49,7 @@ fun PeerProfileRoute(
 fun PeerProfileScreen(
     state: PeerProfileUiState,
     onBackClick: () -> Unit,
+    onSetCustomName: (String) -> Unit = {},
 ) {
     val peer = state.peer
     val avatarBitmap = remember(peer?.avatarPath) {
@@ -56,8 +61,48 @@ fun PeerProfileScreen(
         }
     }
 
-    val isConnected = (state.transport.connectionState == TransportConnectionState.Connected &&
-            state.transport.peerAddress == peer?.deviceAddress)
+    // Direct connection check: is this peer directly connected right now over BLE?
+    val isDirect = state.transport.isPeerDirectlyConnected(peer?.nodeId, peer?.deviceAddress)
+
+    var showEditDialog by remember { mutableStateOf(false) }
+    var aliasInput by remember(peer?.customName) { mutableStateOf(peer?.customName ?: "") }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Set Custom Name / Alias") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Give this peer a custom name so you can recognize them in your chats.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = aliasInput,
+                        onValueChange = { aliasInput = it },
+                        label = { Text("Custom Name") },
+                        placeholder = { Text(peer?.displayName ?: "e.g. Alex (Dorm 4)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    onSetCustomName(aliasInput)
+                    showEditDialog = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -75,6 +120,7 @@ fun PeerProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -105,49 +151,82 @@ fun PeerProfileScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Display Name
-            Text(
-                text = state.peerLabel,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-            )
-
-            // Connection Badge
-            Spacer(modifier = Modifier.height(8.dp))
-            Surface(
-                color = if (isConnected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                shape = RoundedCornerShape(16.dp),
+            // Display Name with Edit Button
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(if (isConnected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant)
-                    )
-                    Text(
-                        text = if (isConnected) "Connected Nearby" else "Offline / Mesh Store & Forward",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
+                Text(
+                    text = state.peerLabel,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = { showEditDialog = true }) {
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Edit Name / Alias",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            // Connection Badge: Direct BLE vs Mesh Multi-Hop
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                color = if (isDirect) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(if (isDirect) Color(0xFF10B981) else Color(0xFF06B6D4))
+                    )
+                    Text(
+                        text = if (isDirect) "Direct BLE Link (In-Range)" else "Mesh Multi-Hop Link (Store & Forward)",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isDirect) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
 
-            // Information Cards
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Identity & Security Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    // Node ID (UID)
+                    // Custom Alias (if set)
+                    if (!peer?.customName.isNullOrBlank()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp),
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text("Custom Alias (Set by you)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(peer?.customName ?: "", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                        HorizontalDivider()
+                    }
+
+                    // Network Shared Display Name
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Person,
@@ -157,14 +236,14 @@ fun PeerProfileScreen(
                         )
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("User ID (Node UID)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(state.peerNodeId, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                            Text("Network Display Name (Peer's profile)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(peer?.displayName ?: "Not transmitted yet", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                         }
                     }
 
                     HorizontalDivider()
 
-                    // Device Address (BLE MAC)
+                    // Node ID (UID)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.CheckCircle,
@@ -174,32 +253,118 @@ fun PeerProfileScreen(
                         )
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("Bluetooth Device Address", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(peer?.deviceAddress ?: "Unknown", style = MaterialTheme.typography.bodyMedium)
+                            Text("Node UID", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(state.peerNodeId, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
                         }
                     }
 
                     HorizontalDivider()
 
-                    // Encryption Status
+                    // Bluetooth Device Address
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Default.Lock,
+                            Icons.Default.CheckCircle,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp),
                         )
                         Spacer(Modifier.width(12.dp))
                         Column {
+                            Text("Bluetooth MAC Address", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(peer?.deviceAddress?.ifBlank { "Relayed via Mesh" } ?: "Relayed via Mesh", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Protocol & Mesh Routing Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                ),
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Text(
+                        "Protocol & Mesh Details",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+
+                    // Protocol Version
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("Mesh Protocol", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("CampusMesh DTN Protocol v1", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    // Connection Channel
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = if (isDirect) Color(0xFF10B981) else Color(0xFF06B6D4),
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("Active Connection Channel", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                if (isDirect) "Direct BLE Link (In Physical Proximity)" else "Multi-Hop Mesh Relay (Store & Forward)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+
+                    // Routing Type
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Share,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("Routing Architecture", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Epidemic Delay-Tolerant Flooding (TTL: 7 Hops)", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+
+                    // End-to-End Encryption
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp),
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
                             Text("End-to-End Security", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
-                                text = if (!peer?.publicKeyBase64.isNullOrBlank()) "RSA-2048 / AES-GCM Encrypted" else "Key exchange pending",
+                                if (!peer?.publicKeyBase64.isNullOrBlank()) "RSA-2048 & AES-GCM (Zero-Knowledge Relays)" else "Public Key Exchange In Progress",
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,10 +45,19 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+
 @Composable
 fun ChatRoute(
     onBackClick: () -> Unit,
     onNavigateToPeerProfile: (String, String) -> Unit,
+    onNavigateToCall: (String, String) -> Unit = { _, _ -> },
     viewModel: ChatViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -56,7 +67,12 @@ fun ChatRoute(
         onPeerProfileClick = {
             onNavigateToPeerProfile(uiState.peerNodeId, uiState.peerLabel)
         },
+        onStartCall = {
+            onNavigateToCall(uiState.peerNodeId, uiState.peerLabel)
+        },
         onSendMessage = viewModel::sendMessage,
+        onReconnect = viewModel::reconnect,
+        onUpdateCustomName = viewModel::updatePeerCustomName,
     )
 }
 
@@ -66,9 +82,23 @@ fun ChatScreen(
     state: ChatUiState,
     onBackClick: () -> Unit,
     onPeerProfileClick: () -> Unit,
+    onStartCall: () -> Unit = {},
     onSendMessage: (String) -> Unit,
+    onReconnect: () -> Unit = {},
+    onUpdateCustomName: (String) -> Unit = {},
 ) {
+    val context = LocalContext.current
+    val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { isGranted ->
+        if (isGranted) {
+            onStartCall()
+        }
+    }
+
     var textInput by remember { mutableStateOf("") }
+    var showRenameDialog by remember { mutableStateOf(false) }
+
     val listState = rememberLazyListState()
     val appTheme = LocalAppTheme.current
     val isPixel = (appTheme == AppTheme.PIXEL_8BIT)
@@ -86,22 +116,66 @@ fun ChatScreen(
         }
     }
 
-    val connectionColor = when (state.transport.connectionState) {
-        TransportConnectionState.Connected -> if (isPixel) PixelGreen else MaterialTheme.colorScheme.secondary
-        TransportConnectionState.Connecting -> if (isPixel) PixelOrange else MaterialTheme.colorScheme.tertiary
+    val isDirect = state.transport.isPeerDirectlyConnected(state.peerNodeId, state.peer?.deviceAddress)
+
+    val connectionColor = when {
+        isDirect -> if (isPixel) PixelGreen else Color(0xFF10B981)
+        state.transport.connectionState == TransportConnectionState.Connected -> if (isPixel) PixelCyan else Color(0xFF06B6D4)
+        state.transport.connectionState == TransportConnectionState.Connecting -> if (isPixel) PixelOrange else MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
-    val connectionLabel = when (state.transport.connectionState) {
-        TransportConnectionState.Connected -> "● Connected"
-        TransportConnectionState.Connecting -> "○ Connecting…"
-        TransportConnectionState.Failed -> "✕ Failed"
-        TransportConnectionState.Disconnected -> "○ Offline — queued"
+    val connectionLabel = when {
+        isDirect -> "● Direct BLE (In-Range)"
+        state.transport.connectionState == TransportConnectionState.Connected -> "● Mesh Active (Relayed)"
+        state.transport.connectionState == TransportConnectionState.Connecting -> "○ Connecting…"
+        state.transport.connectionState == TransportConnectionState.Failed -> "✕ Disconnected"
+        else -> "○ Offline (Mesh Store & Forward)"
+    }
+
+    if (showRenameDialog) {
+        var nameInput by remember(state.peer?.customName) { mutableStateOf(state.peer?.customName ?: "") }
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Set Custom Name / Alias") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Give this peer a custom name stored in your local database.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Custom Name") },
+                        placeholder = { Text(state.peer?.displayName ?: state.peerLabel) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    onUpdateCustomName(nameInput)
+                    showRenameDialog = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 
     Scaffold(
         containerColor = if (isPixel) Color.White else MaterialTheme.colorScheme.background,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
+                windowInsets = WindowInsets.statusBars,
                 title = {
                     Row(
                         modifier = Modifier
@@ -151,6 +225,22 @@ fun ChatScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = connectionColor,
                             )
+                            // Reconnect button shown when disconnected or failed.
+                            val canReconnect = state.transport.connectionState == TransportConnectionState.Disconnected ||
+                                    state.transport.connectionState == TransportConnectionState.Failed
+                            if (canReconnect && state.transport.peerAddress != null) {
+                                TextButton(
+                                    onClick = onReconnect,
+                                    contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
+                                    modifier = Modifier.height(20.dp),
+                                ) {
+                                    Text(
+                                        text = "Tap to reconnect",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (isPixel) PixelCyan else MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
                         }
                     }
                 },
@@ -163,18 +253,47 @@ fun ChatScreen(
                         )
                     }
                 },
+                actions = {
+                    IconButton(onClick = {
+                        val hasAudioPermission = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.RECORD_AUDIO,
+                        ) == PackageManager.PERMISSION_GRANTED
+
+                        if (hasAudioPermission) {
+                            onStartCall()
+                        } else {
+                            recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    }) {
+                        Icon(
+                            Icons.Default.Call,
+                            contentDescription = "Voice Call",
+                            tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    IconButton(onClick = { showRenameDialog = true }) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit Custom Name",
+                            tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
             )
         },
         bottomBar = {
             Surface(
                 tonalElevation = 3.dp,
                 color = if (isPixel) Color(0xFFF4F6FC) else MaterialTheme.colorScheme.surface,
+                modifier = Modifier
+                    .imePadding()
+                    .navigationBarsPadding(),
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp)
-                        .navigationBarsPadding(),
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {

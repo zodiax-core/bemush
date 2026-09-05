@@ -51,7 +51,16 @@ interface MessageDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessage(message: MessageEntity)
 
-    @Query("UPDATE messages SET status = :status WHERE messageId = :messageId")
+    @Query("""
+        UPDATE messages 
+        SET status = :status 
+        WHERE messageId = :messageId 
+          AND (
+            (:status = 'SENT' AND status = 'PENDING') OR
+            (:status = 'DELIVERED' AND status IN ('PENDING', 'SENT')) OR
+            (:status = 'SEEN')
+          )
+    """)
     suspend fun updateMessageStatus(messageId: String, status: String)
 
     @Query("UPDATE messages SET isRead = 1 WHERE senderId = :peerId AND isRead = 0")

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.campusmesh.data.MessageRepository
 import com.campusmesh.data.PeerRepository
 import com.campusmesh.identity.LocalNodeIdStore
+import com.campusmesh.profile.LocalProfileState
+import com.campusmesh.profile.ProfileManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,9 +30,18 @@ class HomeViewModel @Inject constructor(
     messageRepository: MessageRepository,
     peerRepository: PeerRepository,
     localNodeIdStore: LocalNodeIdStore,
+    profileManager: ProfileManager,
 ) : ViewModel() {
 
     private val localNodeId = localNodeIdStore.nodeId.toString()
+
+    /** Local user profile — used to display own avatar in HomeScreen top bar. */
+    val localProfile: StateFlow<LocalProfileState> = profileManager.localProfile
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = profileManager.localProfile.value,
+        )
 
     val conversations: StateFlow<List<ConversationSummary>> =
         combine(
@@ -44,7 +55,9 @@ class HomeViewModel @Inject constructor(
                 val peerId = if (msg.senderId == "local") msg.recipientId else msg.senderId
                 if (peerId == localNodeId || peerId == "local") return@mapNotNull null
                 val peer = peers.find { it.nodeId == peerId }
-                val label = peer?.displayName ?: peerId.take(8).uppercase()
+                val label = peer?.customName?.ifBlank { null }
+                    ?: peer?.displayName?.ifBlank { null }
+                    ?: peerId.take(8).uppercase()
                 val count = unreadMap[peerId] ?: 0
 
                 ConversationSummary(

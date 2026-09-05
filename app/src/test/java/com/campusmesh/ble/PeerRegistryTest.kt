@@ -1,4 +1,4 @@
-﻿package com.campusmesh.ble
+package com.campusmesh.ble
 
 import com.campusmesh.data.PeerRepository
 import com.campusmesh.db.PeerDao
@@ -77,6 +77,7 @@ class PeerRegistryTest {
         override fun getAllPeers(): Flow<List<PeerEntity>> = flowOf(emptyList())
         override suspend fun getPeer(nodeId: String): PeerEntity? = null
         override suspend fun upsertPeer(peer: PeerEntity) {}
+        override suspend fun updateCustomName(nodeId: String, customName: String?) {}
         override suspend fun deleteStalePeers(cutoffTime: Long) {}
         override suspend fun deleteAllPeers() {}
     }

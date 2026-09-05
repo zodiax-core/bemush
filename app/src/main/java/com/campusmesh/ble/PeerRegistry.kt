@@ -25,6 +25,8 @@ class PeerRegistry @Inject constructor(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val lastDbWriteMs = HashMap<UUID, Long>()
+
     fun upsert(
         nodeId: UUID,
         deviceAddress: String,
@@ -34,6 +36,7 @@ class PeerRegistry @Inject constructor(
         nowMs: Long = clock.nowMillis(),
     ) {
         if (nodeId == localNodeId) return
+        var shouldPersist = false
         synchronized(lock) {
             val existing = byId[nodeId]
             byId[nodeId] = NearbyPeer(
@@ -43,16 +46,23 @@ class PeerRegistry @Inject constructor(
                 lastSeenEpochMs = nowMs,
                 firstSeenEpochMs = existing?.firstSeenEpochMs ?: nowMs,
             )
+            val lastWrite = lastDbWriteMs[nodeId] ?: 0L
+            if (nowMs - lastWrite >= DB_THROTTLE_MS) {
+                lastDbWriteMs[nodeId] = nowMs
+                shouldPersist = true
+            }
             pruneLocked(nowMs, staleAfterMs)
             publishLocked()
         }
-        scope.launch {
-            peerRepository.upsertPeer(
-                nodeId = nodeId.toString(),
-                deviceAddress = deviceAddress,
-                rssiDbm = rssiDbm,
-                lastSeenEpochMs = nowMs
-            )
+        if (shouldPersist) {
+            scope.launch {
+                peerRepository.upsertPeer(
+                    nodeId = nodeId.toString(),
+                    deviceAddress = deviceAddress,
+                    rssiDbm = rssiDbm,
+                    lastSeenEpochMs = nowMs
+                )
+            }
         }
     }
 
@@ -64,18 +74,15 @@ class PeerRegistry @Inject constructor(
             pruneLocked(nowMs, staleAfterMs)
             publishLocked()
         }
-        scope.launch {
-            peerRepository.pruneStale(nowMs - staleAfterMs)
-        }
+        // NOTE: We deliberately do NOT delete peers from SQLite here.
+        // Room peer records contain persistent contact data (display names, custom aliases,
+        // avatars, public keys) which must survive when peers temporarily step out of range.
     }
 
     fun clear() {
         synchronized(lock) {
             byId.clear()
             publishLocked()
-        }
-        scope.launch {
-            peerRepository.clearAll()
         }
     }
 
@@ -90,13 +97,14 @@ class PeerRegistry @Inject constructor(
     }
 
     private fun publishLocked() {
-        _peers.value = byId.values.sortedWith(
-            compareByDescending<NearbyPeer> { it.lastSeenEpochMs }
-                .thenByDescending { it.rssiDbm },
-        )
+        // Sort by most-recently-seen only. No RSSI filter — every discovered peer
+        // appears immediately regardless of signal strength.
+        _peers.value = byId.values.sortedByDescending { it.lastSeenEpochMs }
     }
 
     companion object {
-        const val DEFAULT_STALE_AFTER_MS: Long = 20_000L
+        // 45s window: reduces peer flicker during BLE scan gaps and temporary signal drops.
+        const val DEFAULT_STALE_AFTER_MS: Long = 45_000L
+        const val DB_THROTTLE_MS: Long = 5_000L
     }
 }

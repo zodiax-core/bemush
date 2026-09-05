@@ -36,7 +36,10 @@ class ChatViewModel @Inject constructor(
         directTransportController.snapshot,
     ) { messages, peers, transport ->
         val peer = peers.find { it.nodeId == peerNodeId }
-        val effectiveLabel = peer?.displayName ?: initialPeerLabel.takeIf { it.isNotBlank() } ?: peerNodeId.take(8).uppercase()
+        val effectiveLabel = peer?.customName?.ifBlank { null }
+            ?: peer?.displayName?.ifBlank { null }
+            ?: initialPeerLabel.takeIf { it.isNotBlank() }
+            ?: peerNodeId.take(8).uppercase()
 
         ChatUiState(
             peerNodeId = peerNodeId,
@@ -60,21 +63,25 @@ class ChatViewModel @Inject constructor(
         directTransportController.activeChatPeerId = peerNodeId
         directTransportController.markConversationAsRead(peerNodeId)
 
-        // Auto-connect on chat screen open
+        // Only initiate connection if not already directly connected in mesh
         viewModelScope.launch {
+            val liveAddress = directTransportController.resolveConnectableAddress(peerNodeId)
             val peer = peerRepository.getPeer(peerNodeId)
-            if (peer != null) {
-                val currentTransport = directTransportController.snapshot.value
-                if (currentTransport.connectionState != TransportConnectionState.Connected ||
-                    currentTransport.peerAddress != peer.deviceAddress
-                ) {
-                    val label = peer.displayName ?: initialPeerLabel
-                    directTransportController.connectToPeer(
-                        deviceAddress = peer.deviceAddress,
-                        peerNodeId = peerNodeId,
-                        peerLabel = label
-                    )
-                }
+            val effectiveAddress = liveAddress ?: peer?.deviceAddress ?: ""
+
+            val isAlreadyDirect = directTransportController.isPeerDirectlyConnected(peerNodeId) ||
+                    (effectiveAddress.isNotBlank() && directTransportController.isAddressDirectlyConnected(effectiveAddress))
+
+            if (!isAlreadyDirect && effectiveAddress.isNotBlank()) {
+                val label = peer?.customName?.ifBlank { null }
+                    ?: peer?.displayName?.ifBlank { null }
+                    ?: initialPeerLabel.takeIf { it.isNotBlank() }
+                    ?: peerNodeId.take(8).uppercase()
+                directTransportController.connectToPeer(
+                    deviceAddress = effectiveAddress,
+                    peerNodeId = peerNodeId,
+                    peerLabel = label
+                )
             }
         }
     }
@@ -82,6 +89,35 @@ class ChatViewModel @Inject constructor(
     fun sendMessage(content: String) {
         if (content.isBlank()) return
         directTransportController.sendMessage(content, targetPeerNodeId = peerNodeId)
+    }
+
+    /** Manually reconnects to this peer. Bound to the reconnect button in ChatScreen. */
+    fun reconnect() {
+        viewModelScope.launch {
+            val liveAddress = directTransportController.resolveConnectableAddress(peerNodeId)
+            val peer = peerRepository.getPeer(peerNodeId)
+            val effectiveAddress = liveAddress ?: peer?.deviceAddress ?: ""
+            if (effectiveAddress.isNotBlank()) {
+                val label = peer?.customName?.ifBlank { null }
+                    ?: peer?.displayName?.ifBlank { null }
+                    ?: initialPeerLabel.takeIf { it.isNotBlank() }
+                    ?: peerNodeId.take(8).uppercase()
+                directTransportController.connectToPeer(
+                    deviceAddress = effectiveAddress,
+                    peerNodeId = peerNodeId,
+                    peerLabel = label
+                )
+            } else {
+                directTransportController.reconnectToPeer()
+            }
+        }
+    }
+
+    /** Updates the custom name / alias for this peer in Room SQLite. */
+    fun updatePeerCustomName(newName: String) {
+        viewModelScope.launch {
+            peerRepository.setCustomName(peerNodeId, newName)
+        }
     }
 
     override fun onCleared() {

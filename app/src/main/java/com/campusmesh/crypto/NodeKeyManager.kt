@@ -111,6 +111,14 @@ class NodeKeyManager @Inject constructor(
     }
 
     fun decrypt(payloadJson: String): DecryptedMessage? {
+        // Plaintext fallback if not an EncryptedPayload JSON
+        if (!payloadJson.trimStart().startsWith("{") || !payloadJson.contains("\"encryptedAesKey\"")) {
+            return DecryptedMessage(
+                plaintext = payloadJson,
+                senderPublicKey = "",
+            )
+        }
+
         return try {
             val payload = json.decodeFromString<EncryptedPayload>(payloadJson)
             val encryptedAesKeyBytes = Base64.decode(payload.encryptedAesKey, Base64.NO_WRAP)
@@ -133,7 +141,7 @@ class NodeKeyManager @Inject constructor(
                 senderPublicKey = payload.senderPublicKey,
             )
         } catch (e: Exception) {
-            Timber.e(e, "Failed to decrypt message")
+            Timber.e(e, "Failed to decrypt message payload")
             null
         }
     }

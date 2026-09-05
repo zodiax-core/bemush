@@ -29,7 +29,9 @@ data class PeersUiState(
 ) {
     fun resolveLabel(nodeId: String, fallback: String): String {
         val peer = allPeers.find { it.nodeId == nodeId }
-        return peer?.displayName ?: fallback
+        return peer?.customName?.ifBlank { null }
+            ?: peer?.displayName?.ifBlank { null }
+            ?: fallback
     }
 }
 
@@ -66,9 +68,10 @@ class PeersViewModel @Inject constructor(
     )
 
     init {
+        // Hint to the BLE controller that the Peers UI is in the foreground so it
+        // can use a higher scan duty cycle. The actual start/stop of discovery and
+        // the GATT server is managed by MeshForegroundService, not the ViewModel.
         discoveryController.setForeground(true)
-        discoveryController.setWantedRunning(true)
-        transportController.startServer()
 
         viewModelScope.launch {
             while (isActive) {

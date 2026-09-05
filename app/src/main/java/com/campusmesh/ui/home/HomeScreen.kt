@@ -14,10 +14,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,12 +53,14 @@ fun HomeRoute(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val conversations by viewModel.conversations.collectAsStateWithLifecycle()
+    val localProfile by viewModel.localProfile.collectAsStateWithLifecycle()
     HomeScreen(
         conversations = conversations,
         onConversationClick = { conv -> onNavigateToChat(conv.peerId, conv.peerLabel) },
         onNewChatClick = onNavigateToPeers,
         onDebugClick = onNavigateToDebug,
         onProfileClick = onNavigateToProfile,
+        localAvatarPath = localProfile.avatarPath,
     )
 }
 
@@ -67,9 +72,16 @@ fun HomeScreen(
     onNewChatClick: () -> Unit,
     onDebugClick: () -> Unit,
     onProfileClick: () -> Unit,
+    localAvatarPath: String? = null,
 ) {
     val appTheme = LocalAppTheme.current
     val isPixel = (appTheme == AppTheme.PIXEL_8BIT)
+
+    val localAvatarBitmap = remember(localAvatarPath) {
+        localAvatarPath?.let { path ->
+            try { BitmapFactory.decodeFile(path)?.asImageBitmap() } catch (_: Exception) { null }
+        }
+    }
 
     Scaffold(
         containerColor = if (isPixel) Color.White else MaterialTheme.colorScheme.background,
@@ -92,11 +104,27 @@ fun HomeScreen(
                 },
                 actions = {
                     IconButton(onClick = onProfileClick) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        if (localAvatarBitmap != null) {
+                            Image(
+                                bitmap = localAvatarBitmap,
+                                contentDescription = "Profile",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .border(
+                                        width = 2.dp,
+                                        color = if (isPixel) Color.Black else MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape,
+                                    ),
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = "Profile",
+                                tint = if (isPixel) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     IconButton(onClick = onDebugClick) {
                         Icon(

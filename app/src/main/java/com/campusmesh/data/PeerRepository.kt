@@ -23,6 +23,7 @@ class PeerRepository @Inject constructor(
         lastSeenEpochMs: Long,
         publicKeyBase64: String? = null,
         displayName: String? = null,
+        customName: String? = null,
         avatarPath: String? = null,
         avatarHash: String? = null,
     ) {
@@ -34,10 +35,28 @@ class PeerRepository @Inject constructor(
             lastSeenEpochMs = lastSeenEpochMs,
             publicKeyBase64 = publicKeyBase64 ?: existing?.publicKeyBase64,
             displayName = displayName ?: existing?.displayName,
+            customName = customName ?: existing?.customName,
             avatarPath = avatarPath ?: existing?.avatarPath,
             avatarHash = avatarHash ?: existing?.avatarHash,
         )
         peerDao.upsertPeer(entity)
+    }
+
+    suspend fun setCustomName(nodeId: String, customName: String?) {
+        val cleanName = customName?.trim()?.ifBlank { null }
+        val existing = peerDao.getPeer(nodeId)
+        if (existing != null) {
+            peerDao.upsertPeer(existing.copy(customName = cleanName))
+        } else {
+            val entity = PeerEntity(
+                nodeId = nodeId,
+                deviceAddress = "",
+                rssiDbm = -100,
+                lastSeenEpochMs = System.currentTimeMillis(),
+                customName = cleanName,
+            )
+            peerDao.upsertPeer(entity)
+        }
     }
 
     suspend fun pruneStale(cutoffTime: Long) {

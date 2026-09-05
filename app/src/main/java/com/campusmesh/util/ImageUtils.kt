@@ -79,14 +79,16 @@ object ImageUtils {
     }
 
     /**
-     * Converts a profile image file into a Base64 encoded JPEG string for BLE transmission.
+     * Encodes a profile image for BLE transmission.
+     * Uses 144×144 px at 80% JPEG quality to deliver sharp, crisp profile pictures
+     * while remaining compact enough (~3–5 KB) for fast chunked BLE transmission.
      */
     fun encodeFileToBase64(file: File): String? {
         return try {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return null
-            val scaled = scaleDownBitmap(bitmap, maxDimension = 256) // Small for BLE
+            val scaled = scaleDownBitmap(bitmap, maxDimension = 144)
             val outputStream = ByteArrayOutputStream()
-            scaled.compress(Bitmap.CompressFormat.JPEG, 70, outputStream)
+            scaled.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
             val bytes = outputStream.toByteArray()
             Base64.encodeToString(bytes, Base64.NO_WRAP)
         } catch (e: Exception) {

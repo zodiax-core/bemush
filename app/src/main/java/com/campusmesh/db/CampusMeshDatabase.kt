@@ -16,7 +16,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GroupMemberEntity::class,
         BroadcastEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 abstract class CampusMeshDatabase : RoomDatabase() {
@@ -44,6 +44,13 @@ abstract class CampusMeshDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE peers ADD COLUMN avatarPath TEXT DEFAULT NULL")
                 db.execSQL("ALTER TABLE peers ADD COLUMN avatarHash TEXT DEFAULT NULL")
                 db.execSQL("ALTER TABLE messages ADD COLUMN isRead INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /** v8 → v9: adds customName to peers. */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE peers ADD COLUMN customName TEXT DEFAULT NULL")
             }
         }
     }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -34,11 +35,18 @@ object Routes {
     const val Profile = "profile"
     const val Chat = "chat/{peerNodeId}/{peerLabel}"
     const val PeerProfile = "peer_profile/{peerNodeId}/{peerLabel}"
+    const val Call = "call/{peerNodeId}/{peerLabel}/{isIncoming}"
 
     fun chat(peerNodeId: String, peerLabel: String): String {
         val encodedNodeId = URLEncoder.encode(peerNodeId, StandardCharsets.UTF_8.name())
         val encodedLabel = URLEncoder.encode(peerLabel, StandardCharsets.UTF_8.name())
         return "chat/$encodedNodeId/$encodedLabel"
+    }
+
+    fun call(peerNodeId: String, peerLabel: String, isIncoming: Boolean = false): String {
+        val encodedNodeId = URLEncoder.encode(peerNodeId, StandardCharsets.UTF_8.name())
+        val encodedLabel = URLEncoder.encode(peerLabel, StandardCharsets.UTF_8.name())
+        return "call/$encodedNodeId/$encodedLabel/$isIncoming"
     }
 
     fun peerProfile(peerNodeId: String, peerLabel: String): String {
@@ -52,8 +60,19 @@ object Routes {
 }
 
 @Composable
-fun CampusMeshNavHost() {
+fun CampusMeshNavHost(
+    pendingRoute: String? = null,
+    onRouteConsumed: () -> Unit = {},
+) {
     val navController = rememberNavController()
+
+    LaunchedEffect(pendingRoute) {
+        if (!pendingRoute.isNullOrBlank()) {
+            navController.navigate(pendingRoute)
+            onRouteConsumed()
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
@@ -89,7 +108,9 @@ fun CampusMeshNavHost() {
             composable(Routes.Splash) {
                 SplashScreen(
                     onSplashFinished = {
-                        navController.navigate(Routes.Home) {
+                        val destination = pendingRoute ?: Routes.Home
+                        onRouteConsumed()
+                        navController.navigate(destination) {
                             popUpTo(Routes.Splash) { inclusive = true }
                         }
                     },
@@ -148,6 +169,9 @@ fun CampusMeshNavHost() {
                     onNavigateToPeerProfile = { nodeId, label ->
                         navController.navigate(Routes.peerProfile(nodeId, label))
                     },
+                    onNavigateToCall = { nodeId, label ->
+                        navController.navigate(Routes.call(nodeId, label, isIncoming = false))
+                    },
                 )
             }
 
@@ -159,6 +183,19 @@ fun CampusMeshNavHost() {
                 ),
             ) {
                 PeerProfileRoute(
+                    onBackClick = { navController.popBackStack() },
+                )
+            }
+
+            composable(
+                route = Routes.Call,
+                arguments = listOf(
+                    navArgument("peerNodeId") { type = NavType.StringType },
+                    navArgument("peerLabel") { type = NavType.StringType },
+                    navArgument("isIncoming") { type = NavType.BoolType; defaultValue = false },
+                ),
+            ) {
+                com.campusmesh.ui.call.CallRoute(
                     onBackClick = { navController.popBackStack() },
                 )
             }

@@ -32,6 +32,7 @@ object DatabaseModule {
             .addMigrations(
                 CampusMeshDatabase.MIGRATION_6_7,
                 CampusMeshDatabase.MIGRATION_7_8,
+                CampusMeshDatabase.MIGRATION_8_9,
             )
             .fallbackToDestructiveMigration()
             .build()

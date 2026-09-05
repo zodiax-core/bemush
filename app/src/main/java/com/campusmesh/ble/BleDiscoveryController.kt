@@ -143,17 +143,7 @@ class BleDiscoveryController @Inject constructor(
             return
         }
         updateSnapshot(foreground = foreground)
-        if (!foreground) {
-            stopRadios()
-            updateSnapshot(
-                scan = if (_snapshot.value.wantedRunning) RadioOpState.Idle else RadioOpState.Idle,
-                advertise = RadioOpState.Idle,
-                scanDetail = "Paused (app not visible). Android will not scan reliably in the background without a foreground service.",
-                advertiseDetail = "Paused (app not visible)",
-            )
-        } else {
-            syncRadios("foreground")
-        }
+        syncRadios("foreground-change")
     }
 
     fun setWantedRunning(wanted: Boolean) {
@@ -202,17 +192,15 @@ class BleDiscoveryController @Inject constructor(
         )
         updateSnapshot(blocks = plan.blocks, lastError = null)
 
-        val shouldRun = _snapshot.value.wantedRunning && _snapshot.value.foreground
+        val shouldRun = _snapshot.value.wantedRunning
         if (!shouldRun) {
             stopRadios()
-            if (!_snapshot.value.wantedRunning) {
-                updateSnapshot(
-                    scan = RadioOpState.Idle,
-                    advertise = RadioOpState.Idle,
-                    scanDetail = "Stopped",
-                    advertiseDetail = "Stopped",
-                )
-            }
+            updateSnapshot(
+                scan = RadioOpState.Idle,
+                advertise = RadioOpState.Idle,
+                scanDetail = "Stopped",
+                advertiseDetail = "Stopped",
+            )
             return
         }
 

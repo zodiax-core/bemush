@@ -1,4 +1,4 @@
-﻿package com.campusmesh.db
+package com.campusmesh.db
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -16,6 +16,9 @@ interface PeerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertPeer(peer: PeerEntity)
+
+    @Query("UPDATE peers SET customName = :customName WHERE nodeId = :nodeId")
+    suspend fun updateCustomName(nodeId: String, customName: String?)
 
     @Query("DELETE FROM peers WHERE lastSeenEpochMs < :cutoffTime")
     suspend fun deleteStalePeers(cutoffTime: Long)

@@ -29,6 +29,14 @@ import javax.inject.Inject
 /**
  * Foreground service that keeps BLE discovery and GATT connections alive
  * while the app is in the background or the screen is off.
+ *
+ * This service owns the lifecycle of:
+ *  - BLE advertising + scanning (via [BleDiscoveryController])
+ *  - GATT server (via [DirectTransportController])
+ *  - Periodic mesh self-healing: reconnects to visible peers every ~10 seconds
+ *  - Periodic packet flush: drains the outbox every ~2 seconds regardless of
+ *    whether clients are currently connected, so new connections immediately
+ *    get queued messages.
  */
 @AndroidEntryPoint
 class MeshForegroundService : Service() {
@@ -59,7 +67,7 @@ class MeshForegroundService : Service() {
             Timber.w(e, "Could not start BLE discovery/GATT server in MeshForegroundService (likely missing permissions)")
         }
 
-        // Tick loop: prune stale peers every second.
+        // ── Tick loop: prune stale peers + update notification every second ──
         serviceScope.launch {
             while (isActive) {
                 delay(1_000)
@@ -71,10 +79,55 @@ class MeshForegroundService : Service() {
                 }
             }
         }
+
+        // ── Continuous packet flush loop (every 2 s) ──────────────────────────
+        // Runs even when no peers are connected so new connections immediately
+        // drain the outbox without waiting for the next user action.
+        serviceScope.launch {
+            while (isActive) {
+                delay(2_000)
+                try {
+                    transportController.flushPendingPackets()
+                } catch (e: Exception) {
+                    Timber.w(e, "Flush error in MeshForegroundService")
+                }
+            }
+        }
+
+        // ── Mesh self-healing loop (every 12 s) ───────────────────────────────
+        // Continuously connects to visible BLE peers so messaging works without
+        // ever visiting the Peers tab. Stops only when Bluetooth is off.
+        serviceScope.launch {
+            while (isActive) {
+                delay(12_000)
+                try {
+                    val nearbyPeers = discoveryController.snapshot.value.peers
+                    for (peer in nearbyPeers) {
+                        val nodeId = peer.nodeId.toString()
+                        val addr = peer.deviceAddress
+                        if (!transportController.isPeerDirectlyConnected(nodeId) &&
+                            !transportController.isAddressDirectlyConnected(addr)
+                        ) {
+                            Timber.d("MeshService self-heal: connecting to %s @ %s", nodeId, addr)
+                            transportController.connectToPeer(addr, nodeId, peer.shortLabel)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Self-heal error in MeshForegroundService")
+                }
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Timber.i("MeshForegroundService onStartCommand")
+        try {
+            discoveryController.setWantedRunning(true)
+            discoveryController.refresh()
+            transportController.onBluetoothRestarted()
+        } catch (e: Exception) {
+            Timber.w(e, "Error syncing radios in onStartCommand")
+        }
         return START_STICKY  // Restart automatically if killed.
     }
 
@@ -116,6 +169,13 @@ class MeshForegroundService : Service() {
             this, 0, tapIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val stopIntent = Intent(this, MeshControlReceiver::class.java).apply {
+            action = MeshControlReceiver.ACTION_STOP_MESH
+        }
+        val stopPendingIntent = PendingIntent.getBroadcast(
+            this, 1, stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         val peersText = when (peerCount) {
             0 -> "Scanning for nearby peers…"
             1 -> "1 peer nearby"
@@ -126,6 +186,7 @@ class MeshForegroundService : Service() {
             .setContentText(peersText)
             .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
             .setContentIntent(pendingIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop Process", stopPendingIntent)
             .setOngoing(true)
             .setSilent(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
@@ -172,7 +233,11 @@ class MeshForegroundService : Service() {
         fun startService(context: Context) {
             try {
                 val intent = Intent(context, MeshForegroundService::class.java)
-                context.startService(intent)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
             } catch (e: Exception) {
                 Timber.w(e, "Could not start MeshForegroundService")
             }
